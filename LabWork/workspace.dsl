@@ -1,55 +1,120 @@
 workspace {
-
+    name "Coin keeper"
+    description "Моделирование архитектуры сервиса ведения бюджета"
+    
     model {
-        user = person "Пользователь" "Пользователь приложения CoinKeeper"
-
-        coinkeeper = softwareSystem "CoinKeeper" "Приложение для управления личными финансами" {
-            webApp = container "Веб-приложение" "React.js" "Предоставляет веб-интерфейс для пользователей"
-            mobileApp = container "Мобильное приложение" "React Native" "Предоставляет мобильный интерфейс для пользователей"
-            api = container "API" "Node.js, Express" "Обрабатывает запросы от клиентских приложений"
-            database = container "База данных" "PostgreSQL" "Хранит данные о пользователях, планируемых доходах и расходах"
+        user = person "Пользователь" {
+            description "Пользователь сервиса ведения бюджета"
         }
 
-        # Определение связей API
-        user -> webApp "Использует"
-        user -> mobileApp "Использует"
-        webApp -> api "Отправляет запросы"
-        mobileApp -> api "Отправляет запросы"
-        api -> database "Читает/пишет данные"
+        coin_keeper = softwareSystem "Сервис ведения бюджета" {
+            description "Онлайн сервис для управления финансами"
+            user -> this "Использует"
+
+            client_mobile_app = container "Мобильное приложение" {
+                description "Интерфейс для пользователей сервиса ведения бюджета"
+                technology "React Native"
+                user -> this "Работает через"
+            }
+
+            api = container "API" {
+                description "Backend API для управления пользователями и финансами"
+                technology "Spring Boot"
+                client_mobile_app -> this "Использует"
+            }
+
+            user_service = container "User Service" {
+                description "Сервис для управления пользователями"
+                technology "Spring Boot"
+                api -> this "Вызывает"
+            }
+
+            finance_service = container "Finance Service" {
+                description "Сервис для управления финансами"
+                technology "Spring Boot"
+                api -> this "Вызывает"
+            }
+
+            user_db = container "База данных пользователей" {
+                description "Хранение данных пользователей"
+                technology "PostgreSQL"
+                user_service -> this "Читает и записывает"
+            }
+
+            finance_db = container "База данных финансов" {
+                description "Хранение информации о финансах"
+                technology "PostgreSQL"
+                finance_service -> this "Читает и записывает"
+            }
+        }
     }
 
     views {
-        systemContext coinkeeper "CoinKeeper_Context" {
+        themes default
+
+        systemLandscape "SystemLandscape"{
             include *
-            autolayout lr
+            autoLayout lr
         }
 
-        container coinkeeper "CoinKeeper_Containers" {
+        systemContext coin_keeper "Context" {
             include *
-            autolayout lr
+            autoLayout
         }
 
-        dynamic coinkeeper "Create_User" "Создание нового пользователя" {
-            user -> webApp "Нажимает кнопку 'Регистрация'"
-            webApp -> api "Отправляет запрос на создание пользователя"
-            api -> database "Сохраняет данные пользователя"
-            api -> webApp "Возвращает ответ об успешном создании"
-            webApp -> user "Отображает сообщение об успешной регистрации"
+        container coin_keeper "Containers" {
+            include *
+            autoLayout
         }
 
+        
+
+        dynamic coin_keeper "UC01" {
+            autoLayout lr
+            description "Тестовый сценарий"
+
+            user -> coin_keeper.client_mobile_app "1. Клиент открывает мобильное приложение"
+            coin_keeper.client_mobile_app -> coin_keeper.api "2. Мобильное приложение запрашивает данные для аутентификации клиента (login/password) и проверяет их через API"
+            coin_keeper.api -> coin_keeper.user_service "3. API запрашивает данные пользователя"
+            coin_keeper.api -> coin_keeper.finance_service "4. API запрашивает данные о финансах"
+            coin_keeper.finance_service -> coin_keeper.finance_db "5. Finance Service читает данные из базы данных финансов"
+            coin_keeper.user_service -> coin_keeper.user_db "6. User Service читает данные из базы данных пользователей"
+        }
+        
         styles {
             element "Person" {
-                background "#0a60ff"
-                color "#ffffff"
-                shape "Person"
+                color #ffffff
+                fontSize 22
+                shape Person
             }
-            element "Software System" {
-                background "#1168bd"
-                color "#ffffff"
+            element "Customer" {
+                background #08427b
+            }
+
+            element "ExternalSystem" {
+                background #c0c0c0
+                color #ffffff
             }
             element "Container" {
-                background "#438dd5"
-                color "#ffffff"
+                background #438dd5
+                color #ffffff
+            }
+            element "WebBrowser" {
+                shape WebBrowser
+            }
+            element "MobileApp" {
+                shape MobileDevicePortrait
+            }
+            element "Database" {
+                shape Cylinder
+            }
+            element "Queue" {
+                shape Pipe
+            }
+            element "Component" {
+                background #85bbf0
+                color #000000
+                shape Component
             }
         }
     }
